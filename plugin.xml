@@ -49,6 +49,5 @@
 
         <!-- MICO SDK -->
         <framework src="src/android/build.gradle" custom="true" type="gradleReference" />
-        <resource-file src="src/android/libs/micosdk-release.aar" target="libs/micosdk-release.aar" />
     </platform>
 </plugin>

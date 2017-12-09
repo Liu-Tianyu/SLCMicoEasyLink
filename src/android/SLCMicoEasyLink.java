@@ -3,10 +3,10 @@ package com.siemens.dolphin.SLCMicoEasyLink;
 import android.content.Context;
 import android.util.Log;
 
-import com.mico.micoapi.MiCOEasyLink;
-import com.mico.micoapi.MiCOmDNS;
-import com.mxchip.callbacks.EasyLinkCallBack;
-import com.mxchip.callbacks.SearchDeviceCallBack;
+import io.fogcloud.sdk.easylink.api.EasyLink;
+import io.fogcloud.sdk.easylink.api.EasylinkP2P;
+import io.fogcloud.sdk.easylink.helper.EasyLinkCallBack;
+import io.fogcloud.sdk.easylink.helper.EasyLinkParams;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaInterface;
@@ -29,11 +29,9 @@ public class SLCMicoEasyLink extends CordovaPlugin {
     private static final int SLEEP_TIME = 20;
     private static final String DISCOVER_SERVICE = "_easylink._tcp.local.";
 
-    private MiCOEasyLink easyLink;
-    private MiCOmDNS mDNS;
+    private EasyLink easyLink;
+    private EasylinkP2P elp2p;
     private Context context;
-    private boolean isSearched;
-    private HashMap<String, JSONObject> devices;
 
     CallbackContext discoverCallback;
 
@@ -47,8 +45,8 @@ public class SLCMicoEasyLink extends CordovaPlugin {
     public void initialize(CordovaInterface cordova, CordovaWebView webView) {
         super.initialize(cordova, webView);
         context = this.cordova.getActivity().getApplicationContext();
-        easyLink = new MiCOEasyLink();
-        mDNS = new MiCOmDNS();
+        easyLink = new EasyLink(context);
+        elp2p = new EasylinkP2P(context);
     }
 
     public boolean execute(String action, final JSONArray args, final CallbackContext callbackContext) {
@@ -62,7 +60,7 @@ public class SLCMicoEasyLink extends CordovaPlugin {
                 @Override
                 public void run() {
                     try {
-                        startWifiConfigWithPwd(callbackContext, args.getString(0), args.getString(1));
+                        startWifiConfigWithPwd(callbackContext, args.getString(0));
                     } catch (JSONException e) {
                         Thread t = Thread.currentThread();
                         t.getUncaughtExceptionHandler().uncaughtException(t, e);
@@ -81,44 +79,34 @@ public class SLCMicoEasyLink extends CordovaPlugin {
     }
 
     public String getWifiSSID() {
-        String ssid = easyLink.getSSID(context);
+        String ssid = easyLink.getSSID();
         return (ssid.length() > 0 ? ssid : "No ssid found.");
     }
 
-    public void startWifiConfigWithPwd(CallbackContext callbackContext, String password, String info) {
-        isSearched = false;
+    public void startWifiConfigWithPwd(CallbackContext callbackContext, String password) {
         discoverCallback = callbackContext;
-        devices = null;
 
-        this.easyLink.startEasyLink(
-                context,                         // context
-                this.easyLink.getSSID(context),  // SSID
-                password,                        // password
-                RUN_SECOND,                      // run second
-                SLEEP_TIME,                      // sleep time
-                new EasyLinkCallBack() {         //  EasyLinkCallBack
-                    @Override
-                    public void onSuccess(String s) {
-                        Log.d(TAG, "startEasyLink onSuccess: " + s);
-                        if (!isSearched) {
-                            startSearchDevice();
-                            isSearched = true;
-                        } else {
-                            stopSearchDevice();
-                        }
-                    }
-
-                    @Override
-                    public void onFailure(int i, String s) {
-                        Log.d(TAG, "startEasyLink onFailure: " + i + ", " + s);
-                    }
-                },
-                info
-        );
+        EasyLinkParams easylinkPara = new EasyLinkParams();
+        easylinkPara.ssid = easyLink.getSSID();
+        easylinkPara.password = password;
+        easylinkPara.runSecond = RUN_SECOND;
+        easylinkPara.sleeptime = SLEEP_TIME;
+        
+        elp2p.startEasyLink(easylinkPara, new EasyLinkCallBack() {
+            @Override
+            public void onSuccess(int code, String message) {
+                Log.d(TAG, code + message);
+                discoverCallback.success(message);
+            }
+            @Override
+            public void onFailure(int code, String message) {
+                Log.d(TAG, code + message);
+            }
+        });
     }
 
     public void stopWifiConfig() {
-        this.easyLink.stopEasyLink(new EasyLinkCallBack() {
+        elp2p.stopEasyLink(new EasyLinkCallBack() {
             @Override
             public void onSuccess(String s) {
                 Log.d(TAG, "stopEasyLink onSuccess: " + s);
@@ -127,67 +115,6 @@ public class SLCMicoEasyLink extends CordovaPlugin {
             @Override
             public void onFailure(int i, String s) {
                 Log.d(TAG, "stopEasyLink onFailure: " + i + ", " + s);
-            }
-        });
-    }
-
-    private void startSearchDevice() {
-        mDNS.startMdnsService(context, DISCOVER_SERVICE, new SearchDeviceCallBack() {
-            @Override
-            public void onSuccess(String message) {
-                super.onSuccess(message);
-            }
-
-            /**
-             * If start search device failed, stop searching.
-             */
-            @Override
-            public void onFailure(int code, String message) {
-                super.onFailure(code, message);
-                stopSearchDevice();
-            }
-
-            @Override
-            public void onDevicesFind(JSONArray deviceStatus) {
-                super.onDevicesFind(deviceStatus);
-                Log.d(TAG, "onDeviceFind: " + deviceStatus.toString());
-                try {
-                    if (devices != null) {
-                        for (int i = 0; i < deviceStatus.length(); i++) {
-                            JSONObject device = deviceStatus.getJSONObject(i);
-                            if (!devices.containsKey(device.getString("MAC"))) {
-                                discoverCallback.success(device);
-                                stopSearchDevice();
-                                break;
-                            }
-                        }
-                    } else {
-                        devices = new HashMap<String, JSONObject>();
-                        for (int i = 0; i < deviceStatus.length(); i++) {
-                            JSONObject device = deviceStatus.getJSONObject(i);
-                            devices.put(device.getString("MAC"), device);
-                        }
-                    }
-                } catch (JSONException e) {
-                    Thread t = Thread.currentThread();
-                    t.getUncaughtExceptionHandler().uncaughtException(t, e);
-                }
-            }
-        });
-    }
-
-    private void stopSearchDevice() {
-        mDNS.stopMdnsService(new SearchDeviceCallBack() {
-            @Override
-            public void onSuccess(String message) {
-                super.onSuccess(message);
-                Log.d(TAG, "stopSearchDevice onSuccess: " + message);
-            }
-
-            @Override
-            public void onFailure(int code, String message) {
-                super.onFailure(code, message);
-                Log.d(TAG, "stopSearchDevice onFailure: " + code + ", " + message);
             }
         });
     }
