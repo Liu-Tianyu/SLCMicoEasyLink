@@ -4,7 +4,6 @@ import android.content.Context;
 import android.util.Log;
 
 import io.fogcloud.sdk.easylink.api.EasyLink;
-import io.fogcloud.sdk.easylink.api.EasylinkP2P;
 import io.fogcloud.sdk.easylink.helper.EasyLinkCallBack;
 import io.fogcloud.sdk.easylink.helper.EasyLinkParams;
 
@@ -14,9 +13,6 @@ import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.CordovaWebView;
 import org.json.JSONArray;
 import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.util.HashMap;
 
 public class SLCMicoEasyLink extends CordovaPlugin {
 
@@ -27,10 +23,8 @@ public class SLCMicoEasyLink extends CordovaPlugin {
     private static final String ACTION_STOP_WIFI_CONFIG = "stopWifiConfig";
     private static final int RUN_SECOND = 35000;
     private static final int SLEEP_TIME = 20;
-    private static final String DISCOVER_SERVICE = "_easylink._tcp.local.";
 
     private EasyLink easyLink;
-    private EasylinkP2P elp2p;
     private Context context;
 
     CallbackContext discoverCallback;
@@ -46,7 +40,6 @@ public class SLCMicoEasyLink extends CordovaPlugin {
         super.initialize(cordova, webView);
         context = this.cordova.getActivity().getApplicationContext();
         easyLink = new EasyLink(context);
-        elp2p = new EasylinkP2P(context);
     }
 
     public boolean execute(String action, final JSONArray args, final CallbackContext callbackContext) {
@@ -91,13 +84,14 @@ public class SLCMicoEasyLink extends CordovaPlugin {
         easylinkPara.password = password;
         easylinkPara.runSecond = RUN_SECOND;
         easylinkPara.sleeptime = SLEEP_TIME;
-        
-        elp2p.startEasyLink(easylinkPara, new EasyLinkCallBack() {
+
+        easyLink.startEasyLink(easylinkPara, new EasyLinkCallBack() {
             @Override
             public void onSuccess(int code, String message) {
                 Log.d(TAG, code + message);
                 discoverCallback.success(message);
             }
+
             @Override
             public void onFailure(int code, String message) {
                 Log.d(TAG, code + message);
@@ -106,15 +100,15 @@ public class SLCMicoEasyLink extends CordovaPlugin {
     }
 
     public void stopWifiConfig() {
-        elp2p.stopEasyLink(new EasyLinkCallBack() {
+        easyLink.stopEasyLink(new EasyLinkCallBack() {
             @Override
-            public void onSuccess(String s) {
-                Log.d(TAG, "stopEasyLink onSuccess: " + s);
+            public void onSuccess(int code, String message) {
+                Log.d(TAG, "stopEasyLink onSuccess: " + code + message);
             }
 
             @Override
-            public void onFailure(int i, String s) {
-                Log.d(TAG, "stopEasyLink onFailure: " + i + ", " + s);
+            public void onFailure(int code, String message) {
+                Log.d(TAG, "stopEasyLink onFailure: " + code + message);
             }
         });
     }
