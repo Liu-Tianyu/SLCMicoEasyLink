@@ -42,6 +42,7 @@ public class SLCMicoEasyLink extends CordovaPlugin {
         easyLink = new EasyLink(context);
     }
 
+    @Override
     public boolean execute(String action, final JSONArray args, final CallbackContext callbackContext) {
         if (action.equals(ACTION_WIFI_SSID)) {
             callbackContext.success(getWifiSSID());
@@ -89,12 +90,14 @@ public class SLCMicoEasyLink extends CordovaPlugin {
             @Override
             public void onSuccess(int code, String message) {
                 Log.d(TAG, code + message);
-                discoverCallback.success(message);
+                discoverCallback.success(code);
             }
 
             @Override
             public void onFailure(int code, String message) {
                 Log.d(TAG, code + message);
+                //todo change to error, error is not working now.
+                discoverCallback.success(code);
             }
         });
     }
