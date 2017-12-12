@@ -4,6 +4,7 @@ import android.content.Context;
 import android.util.Log;
 
 import io.fogcloud.sdk.easylink.api.EasyLink;
+import io.fogcloud.sdk.easylink.api.EasylinkP2P;
 import io.fogcloud.sdk.easylink.helper.EasyLinkCallBack;
 import io.fogcloud.sdk.easylink.helper.EasyLinkParams;
 
@@ -25,6 +26,7 @@ public class SLCMicoEasyLink extends CordovaPlugin {
     private static final int SLEEP_TIME = 20;
 
     private EasyLink easyLink;
+    private EasylinkP2P easyLinkP2P;
     private Context context;
 
     CallbackContext discoverCallback;
@@ -40,6 +42,7 @@ public class SLCMicoEasyLink extends CordovaPlugin {
         super.initialize(cordova, webView);
         context = this.cordova.getActivity().getApplicationContext();
         easyLink = new EasyLink(context);
+        easyLinkP2P = new EasylinkP2P(context);
     }
 
     @Override
@@ -65,10 +68,14 @@ public class SLCMicoEasyLink extends CordovaPlugin {
         }
 
         if (action.equals(ACTION_STOP_WIFI_CONFIG)) {
-            stopWifiConfig();
+            this.cordova.getThreadPool().execute(new Runnable() {
+                @Override
+                public void run() {
+                    stopWifiConfig();
+                }
+            });
             return true;
         }
-
         return false;
     }
 
@@ -86,24 +93,23 @@ public class SLCMicoEasyLink extends CordovaPlugin {
         easylinkPara.runSecond = RUN_SECOND;
         easylinkPara.sleeptime = SLEEP_TIME;
 
-        easyLink.startEasyLink(easylinkPara, new EasyLinkCallBack() {
+        easyLinkP2P.startEasyLink(easylinkPara, new EasyLinkCallBack() {
             @Override
             public void onSuccess(int code, String message) {
                 Log.d(TAG, code + message);
-                discoverCallback.success(code);
+                discoverCallback.success(code + message);
             }
 
             @Override
             public void onFailure(int code, String message) {
                 Log.d(TAG, code + message);
-                //todo change to error, error is not working now.
-                discoverCallback.success(code);
+                discoverCallback.error(code + message);
             }
         });
     }
 
     public void stopWifiConfig() {
-        easyLink.stopEasyLink(new EasyLinkCallBack() {
+        easyLinkP2P.stopEasyLink(new EasyLinkCallBack() {
             @Override
             public void onSuccess(int code, String message) {
                 Log.d(TAG, "stopEasyLink onSuccess: " + code + message);

@@ -29,17 +29,17 @@ var argscheck = require('cordova/argscheck'),
  * SLC-Mico EasyLink plugin
  */
 
-function SLCMicoEasyLink() {}
+function SLCMicoEasyLink() { }
 
-SLCMicoEasyLink.prototype.wifiSSID = function(successCallback, errorCallback) {
+SLCMicoEasyLink.prototype.wifiSSID = function (successCallback, errorCallback) {
     exec(successCallback, errorCallback, "SLCMicoEasyLink", "wifiSSID", []);
 };
 
-SLCMicoEasyLink.prototype.startWifiConfigWithPwd = function(password, info, successCallback, errorCallback) {
-    exec(successCallback, errorCallback, "SLCMicoEasyLink", "startWifiConfigWithPwd", [password, info]);
+SLCMicoEasyLink.prototype.startWifiConfigWithPwd = function (password, successCallback, errorCallback) {
+    exec(successCallback, errorCallback, "SLCMicoEasyLink", "startWifiConfigWithPwd", [password]);
 };
 
-SLCMicoEasyLink.prototype.stopWifiConfig = function(successCallback, errorCallback) {
+SLCMicoEasyLink.prototype.stopWifiConfig = function (successCallback, errorCallback) {
     exec(successCallback, errorCallback, "SLCMicoEasyLink", "stopWifiConfig", []);
 };
 
