@@ -6,7 +6,7 @@ repositories {
 }
 
 dependencies {
-    compile 'io.fogcloud.sdk:easylinkv3:0.1.4'
+    compile 'io.fogcloud.sdk:easylinkv3:0.2.0'
 }
 
 android {
