@@ -53,27 +53,16 @@ public class SLCMicoEasyLink extends CordovaPlugin {
         }
 
         if (action.equals(ACTION_START_WIFI_CONFIG_WITH_PWD)) {
-            this.cordova.getThreadPool().execute(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        startWifiConfigWithPwd(callbackContext, args.getString(0));
-                    } catch (JSONException e) {
-                        Thread t = Thread.currentThread();
-                        t.getUncaughtExceptionHandler().uncaughtException(t, e);
-                    }
-                }
-            });
+            try {
+                startWifiConfigWithPwd(callbackContext, args.getString(0));
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
             return true;
         }
 
         if (action.equals(ACTION_STOP_WIFI_CONFIG)) {
-            this.cordova.getThreadPool().execute(new Runnable() {
-                @Override
-                public void run() {
-                    stopWifiConfig();
-                }
-            });
+            stopWifiConfig();
             return true;
         }
         return false;
